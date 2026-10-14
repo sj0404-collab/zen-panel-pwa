@@ -32,7 +32,7 @@ jobs:
             - Иконки для установки на домашний экран
 
             ### Android APK (Zen Panel)
-            - WebView панель с интерфейсом на React/Vue стиле
+            - WebView панель с интерфейсом
             - Подключение к self-hosted хабу NPM Hub
             - VNC / Linux-экран / Терминалы
             - Файловый менеджер, Git операции
@@ -41,23 +41,15 @@ jobs:
 
             ### Установка
             1. **PWA**: Откройте в браузере (Via, Chrome), меню → "Установить сайт"
-               Приложение запускается в standalone режиме без адресной строки
-            2. **APK**: Соберите релиз вручную:
-               ```bash
-               cd code
-               ./gradlew assembleRelease
-               ```
-               (требует keystore в `code/keystore/` и настройки в `gradle.properties`)
+            2. **APK**: Соберите релиз вручную (требует keystore и gradle)
 
-            ### Структура репозитория
+            ### Структура
             - `pwa/` — статические файлы PWA (manifest, service worker, HTML)
-            - `code/app/` — Android модуль с WebView панелью
-            - `.github/workflows/` — CI workflows
+            - `code/` — Android модуль и корневой проект
 
             ### Ссылки
             - GitHub: https://github.com/sj0404-collab/zen-panel-pwa
             - PWA файлы: `pwa/`
-            - Android модуль: `code/app/`
 
             ---
 
