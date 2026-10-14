@@ -22,12 +22,10 @@ jobs:
           path: ./artifacts
 
       - name: Create GitHub Release
-        uses: softprops/-release-action@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: "V${github.ref_name#v} - PWA Release"
-          body: |
-            ## Что нового
+        run: |
+          gh release create "${GITHUB_REF#refs/tags/v}" \
+            --title "V${GITHUB_REF#refs/tags/v} - PWA Release" \
+            --notes "## Что нового
 
             ### PWA приложение
             - Standalone режим (установка в Via, Chrome, мобильные браузеры)
@@ -51,6 +49,9 @@ jobs:
             - GitHub: https://github.com/sj0404-collab/zen-panel-pwa
             - PWA файлы: `pwa/`
             - Android: `code/app/`
+
+            ### Artifacts
+            - Debug APK: доступен как артефакт сборки"
 
       - name: List artifacts
         run: ls -la artifacts/
