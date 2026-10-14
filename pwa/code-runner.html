@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Runner – Zen Panel</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <style>
+    :root { --bg:#0d0d12; --card:#161b22; --border:#30363d; --muted:#8899a3; --text:#c5c6c7; --accent:#1a73e8; }
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; min-height:100vh; }
+    .wrap { max-width:900px; margin:0 auto; padding:20px; }
+    h1 { font-size:22px; margin:0 0 6px; }
+    p.sub { color:var(--muted); font-size:13px; margin:0 0 16px; }
+    .tabs { display:flex; gap:8px; margin-bottom:12px; }
+    .tab { padding:8px 14px; background:#2c323c; border:1px solid var(--border); border-radius:6px; cursor:pointer; color:var(--text); }
+    .tab.active { background:var(--accent); border-color:var(--accent); }
+    .row { display:flex; gap:10px; margin-bottom:10px; align-items:center; }
+    select, button { padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#2c323c; color:var(--text); cursor:pointer; }
+    button.primary { background:var(--accent); border-color:var(--accent); }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    textarea { width:100%; min-height:240px; background:#0b0f14; color:#e6edf3; border:1px solid var(--border); border-radius:8px; padding:12px; font-family:ui-monospace,Consolas,monospace; font-size:14px; resize:vertical; }
+    .out { background:#0b0f14; border:1px solid var(--border); border-radius:8px; padding:12px; min-height:140px; white-space:pre-wrap; word-break:break-word; font-family:ui-monospace,Consolas,monospace; font-size:13px; }
+    .muted { color:var(--muted); font-size:12px; }
+    .status { display:inline-block; margin-left:8px; font-size:12px; }
+    @media (max-width:640px){ .row { flex-wrap:wrap; } textarea { min-height:180px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Локальный запуск кода</h1>
+    <p class="sub">JavaScript выполняется локально в браузере. Python использует Pyodide (WASM) и требует первую загрузку из CDN.</p>
+
+    <div class="tabs">
+      <button id="tabJS" class="tab active" onclick="switchTab('js')">JavaScript</button>
+      <button id="tabPY" class="tab" onclick="switchTab('py')">Python</button>
+    </div>
+
+    <div class="row">
+      <select id="langSelect">
+        <option value="js">JavaScript (локально)</option>
+        <option value="py">Python (Pyodide)</option>
+      </select>
+      <button class="primary" id="runBtn" onclick="runCode()">Запустить</button>
+      <button onclick="clearOutput()">Очистить вывод</button>
+      <span id="pyStatus" class="status"></span>
+    </div>
+
+    <textarea id="code" placeholder="Код..."></textarea>
+    <div class="muted">Вывод:</div>
+    <div id="out" class="out"></div>
+  </div>
+
+  <script>
+    'use strict';
+    const codeEl = document.getElementById('code');
+    const outEl = document.getElementById('out');
+    const runBtn = document.getElementById('runBtn');
+    const pyStatus = document.getElementById('pyStatus');
+    let current = 'js';
+    let pyReady = false, pyodide = null, pyodideLoading = null;
+
+    const templates = {
+      js: `console.log('Hello from JavaScript');\nconsole.log(2 + 2);`,
+      py: `print("Hello from Python")\nprint(2 + 2)`
+    };
+
+    codeEl.value = templates.js;
+
+    function switchTab(lang) {
+      current = lang;
+      document.getElementById('tabJS').classList.toggle('active', lang === 'js');
+      document.getElementById('tabPY').classList.toggle('active', lang === 'py');
+      document.getElementById('langSelect').value = lang;
+      codeEl.value = templates[lang];
+      clearOutput();
+    }
+
+    document.getElementById('langSelect').addEventListener('change', e => switchTab(e.target.value));
+
+    function log(msg, cls) {
+      const span = document.createElement('span');
+      span.textContent = msg + '\n';
+      if (cls) span.style.color = cls === 'err' ? '#ff6b6b' : '#6bcf9f';
+      outEl.appendChild(span);
+      outEl.scrollTop = outEl.scrollHeight;
+    }
+
+    function clearOutput() { outEl.innerHTML = ''; }
+
+    async function ensurePyodide() {
+      if (pyodide) return pyodide;
+      if (pyodideLoading) return pyodideLoading;
+      pyStatus.textContent = 'Python: загрузка…';
+      pyStatus.style.color = '#f0a500';
+      runBtn.disabled = true;
+      pyodideLoading = (async () => {
+        try {
+          const { loadPyodide } = await import('https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.mjs');
+          pyodide = await loadPyodide({
+            indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.1/full/'
+          });
+          if (pyodide.setStdout) {
+            pyodide.setStdout({ batched: (s) => { log(s, ''); } });
+            pyodide.setStderr({ batched: (s) => { log(s, 'err'); } });
+          }
+          pyReady = true;
+          pyStatus.textContent = 'Python: готово';
+          pyStatus.style.color = '#6bcf9f';
+          return pyodide;
+        } catch (e) {
+          pyStatus.textContent = 'Python: офлайн/ошибка';
+          pyStatus.style.color = '#ff6b6b';
+          throw e;
+        } finally {
+          runBtn.disabled = false;
+        }
+      })();
+      return pyodideLoading;
+    }
+
+    function runJS() {
+      const captured = [];
+      const orig = console.log;
+      const consoleProxy = new Proxy(console, {
+        get(obj, prop) {
+          if (prop === 'log' || prop === 'info' || prop === 'warn' || prop === 'error') {
+            return (...args) => {
+              const line = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+              captured.push((prop === 'error' ? '[ERROR] ' : '') + line);
+            };
+          }
+          return obj[prop];
+        }
+      });
+      try {
+        const fn = new Function('console', codeEl.value);
+        const result = fn(consoleProxy);
+        captured.forEach(l => log(l, ''));
+        if (result !== undefined) log('→ ' + (typeof result === 'object' ? JSON.stringify(result) : String(result)), '');
+      } catch (e) {
+        log(e && e.stack ? e.stack : String(e), 'err');
+      }
+    }
+
+    async function runPY() {
+      let py;
+      try { py = await ensurePyodide(); }
+      catch (e) { log('Не удалось загрузить Pyodide (нужен интернет): ' + e, 'err'); return; }
+      try {
+        // Перехват встроенного вывода через globals dict уже настроен через setStdout;
+        // Если код печатает напрямую через print, вывод попадает в out.
+        await py.runPythonAsync(codeEl.value);
+      } catch (e) {
+        log(String(e), 'err');
+      }
+    }
+
+    async function runCode() {
+      clearOutput();
+      runBtn.disabled = true;
+      try {
+        if (current === 'js') runJS();
+        else await runPY();
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

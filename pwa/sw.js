@@ -14,7 +14,8 @@ var ASSETS = [
   '/sw.js',
   '/offline.html',
   '/data.js',
-  '/extension-simulator.html'
+  '/extension-simulator.html',
+  '/code-runner.html'
 ];
 
 self.addEventListener('install', function (e) {
