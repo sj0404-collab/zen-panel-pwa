@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extension Simulator</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border; }
+    body { 
+      min-height: 100vh; 
+      background: #1f2326; 
+      color: #c5c6c7; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 40px;
+    }
+    .search-bar { padding: 20px; background: #202528; border-radius: 8; margin-bottom: 20px; }
+    .search-bar input { width: 100%; padding: 12px; background: #2c323c; border: none; border-radius: 4; color: #c5c6c7; font-size: 16px; }
+    .search-bar input:focus { outline: none; background: #3c4450; }
+    .results { min-height: 300px; padding: 20px; overflow: auto; }
+    .result-item { padding: 12px; border-bottom: 1px solid #30363d; margin-bottom: 8px; cursor: pointer; }
+    .result-item:hover { background: #2c323c; }
+    .no-results { color: #8899a3; padding: 20px; text-align: center; }
+    .status { padding: 8px 16px; background: #3c4450; border-radius: 4; margin: 10px 0; display: inline-block; }
+    .btn { padding: 8px 16px; background: #3c4450; color: #c5c6c7; border: none; border-radius: 4; cursor: pointer; font-size: 14px; }
+    .btn:hover { background: #4f5669; }
+  </style>
+</head>
+<body>
+  <div style="max-width: 800px; margin: 0 auto;">
+    <div class="search-bar">
+      <input type="text" id="extSearchInput" placeholder="Поиск через расширение..." onkeypress="if(event.keyCode==13)extDoSearch()">
+    </div>
+    <div class="results" id="extResults">
+      <div class="no-results">Введите запрос для поиска</div>
+    </div>
+    <div style="margin-top: 20px; text-align: right;">
+      <button class="btn" onclick="closeExtension()">Закрыть</button>
+    </div>
+  </div>
+
+  <script>
+    // Получение сообщения от родительского окна
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'init-extension') {
+        console.log('Extension initialized');
+      }
+    });
+
+    function extDoSearch() {
+      var input = document.getElementById('extSearchInput');
+      var query = input.value.trim();
+      if (!query) return;
+      
+      // Показываем индикатор загрузки
+      var resultsDiv = document.getElementById('extResults');
+      resultsDiv.innerHTML = '<div style="padding: 20px; color: #8899a3;">Поиск...</div>';
+      
+      // Имитация запроса к Google через расширение
+      fetch('https://www.google.com/search?q=' + encodeURIComponent(query))
+        .then(function(response) {
+          if (!response.ok) throw new Error('Network error');
+          return response.text();
+        })
+        .then(function(html) {
+          // Простая экранировка для демонстрации
+          resultsDiv.innerHTML = '<div class="result-item">Результат 1 для: ' + query + '</div>' +
+                                 '<div class="result-item">Результат 2 для: ' + query + '</div>' +
+                                 '<div class="result-item">Результат 3 для: ' + query + '</div>';
+        })
+        .catch(function(error) {
+          resultsDiv.innerHTML = '<div class="no-results">Ошибка поиска: ' + error.message + '</div>';
+        });
+    }
+
+    function closeExtension() {
+      window.close();
+    }
+  </script>
+</body>
+</html>

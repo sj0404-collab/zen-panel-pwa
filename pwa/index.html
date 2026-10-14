@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zen Panel PWA</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border; }
+    body { 
+      min-height: 100vh; 
+      background: #0d0d12; 
+      color: #c5c6c7; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .container { padding: 40px 20px; }
+    .header { text-align: center; margin-bottom: 40px; }
+    .header h1 { font-size: 28px; margin-bottom: 10px; }
+    .header p { color: #8899a3; font-size: 14px; }
+    .card { 
+      background: #161b22; 
+      border: 1px solid #30363d; 
+      border-radius: 8px; 
+      padding: 24px; 
+      margin-bottom: 20px;
+    }
+    .card h3 { color: #f5f6f7; margin-bottom: 16px; font-size: 16px; }
+    .feature { margin-bottom: 16px; }
+    .feature h4 { color: #778ca3; font-size: 13px; text-transform: uppercase; margin-bottom: 8px; }
+    .feature p { color: #8899a3; font-size: 14px; line-height: 1.5; }
+    .status { padding: 12px; border-radius: 6px; margin: 20px 0; }
+    .status.online { background: #1f2326; }
+    .status.offline { background: #3e2525; }
+    .btn { 
+      display: inline-block; 
+      padding: 8px 16px; 
+      background: #3c4450; 
+      color: #c5c6c7; 
+      border: none; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-size: 14px;
+      margin: 4px;
+    }
+    .btn:hover { background: #4f5669; }
+    .btn-primary { background: #1a73e8; }
+    .btn-primary:hover { background: #1557b0; }
+    .search-box { background: #30363d; padding: 16px; border-radius: 8; margin: 20px 0; }
+    .search-box input { width: 100%; padding: 12px; background: #202528; border: none; border-radius: 4; color: #c5c6c7; font-size: 14px; }
+    .search-box input:focus { outline: none; background: #2c323c; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Zen Panel PWA</h1>
+      <p>Приложение с возможностями расширения для мобильных браузеров</p>
+    </div>
+
+    <div class="card">
+      <h3>Функционал</h3>
+      <div class="feature">
+        <h4>📦 Кэширование</h4>
+        <p>Приложение работает в офлайн-режиме благодаря Service Worker</p>
+      </div>
+      <div class="feature">
+        <h4>🔔 Push-уведомления</h4>
+        <p>Поддержка push-уведомлений через Service Worker API</p>
+      </div>
+      <div class="feature">
+        <h4>💾 Хранилище</h4>
+        <p>LocalStorage и Cache API для сохранения данных</p>
+      </div>
+      <div class="feature">
+        <h4>📱 Установка</h4>
+        <p>Можно установить как приложение в Via и других браузерах</p>
+      </div>
+      <div class="feature">
+        <h4>🔍 Google Search</h4>
+        <p>Нативная кнопка поиска с пробросом трафика</p>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Поиск в Google..." onkeypress="if(event.keyCode==13)doGoogleSearch()">
+    </div>
+
+    <div class="card">
+      <h3>Статус</h3>
+      <div class="status online" id="status">Онлайн</div>
+      <button class="btn" onclick="testNotification()">Тест уведомления</button>
+      <button class="btn btn-primary" onclick="launchExtensionWindow()">Запустить расширение</button>
+      <button class="btn" onclick="toggleBrowsec()">Browsec</button>
+      <span id="browsec-status" style="margin-left: 12px; color: #8899a3; font-size: 12px;">—</span>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    // Проверка поддержки Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(function(registration) {
+        console.log('SW зарегистрирован:', registration.scope);
+      });
+    }
+
+    // Проверка поддержки уведомлений
+    function testNotification() {
+      if (!('Notification')) {
+        alert('Уведомления не поддерживаются');
+        return;
+      }
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(function(result) {
+          if (result === 'granted') {
+            new Notification('Zen Panel PWA', {
+              body: 'Приложение работает без Chrome браузера!',
+              icon: '/icons/icon-192x192.png'
+            });
+          }
+        });
+      } else if (Notification.permission === 'granted') {
+        new Notification('Zen Panel PWA', {
+          body: 'Уведомления включены!',
+          icon: '/icons/icon-192x192.png'
+        });
+      }
+    }
+
+    // Проверка статуса
+    function checkStatus() {
+      if (navigator.onLine) {
+        document.getElementById('status').textContent = 'Онлайн';
+        document.getElementById('status').className = 'status online';
+      } else {
+        document.getElementById('status').textContent = 'Офлайн';
+        document.getElementById('status').className = 'status offline';
+      }
+    }
+
+    window.addEventListener('online', checkStatus);
+    window.addEventListener('offline', checkStatus);
+    checkStatus();
+
+    // Нативная Google Search
+    function doGoogleSearch() {
+      var input = document.getElementById('searchInput');
+      var query = input.value.trim();
+      if (query) {
+        var searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+        // Проброс трафика через Service Worker
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then(function(registration) {
+            registration.active.postMessage({
+              type: 'forward-traffic',
+              url: searchUrl
+            });
+          });
+        }
+        // Открыть в новом "окне" (вкладке)
+        window.open(searchUrl, '_blank');
+        input.value = '';
+      }
+    }
+
+    // Browsec integration
+    function toggleBrowsec() {
+      // В PWA нельзя напрямую управлять расширением,
+      // но можно инициировать запрос через SW с пометкой Browsec
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(function(registration) {
+          registration.active.postMessage({
+            type: 'toggle-browsec',
+            action: 'toggle'
+          });
+        });
+      }
+      // Обновляем UI
+      updateBrowsecUI();
+    }
+
+    function updateBrowsecUI() {
+      // Симулируем проверку статуса Browsec
+      // В реальности это был бы запрос к расширению
+      var browsecSpan = document.getElementById('browsec-status');
+      var isActive = Math.random() > 0.5; // Пока что симуляция
+      browsecSpan.textContent = isActive ? 'Активен' : 'Отключен';
+      browsecSpan.style.color = isActive ? '#4c1' : '#666';
+    }
+
+    // Симуляция запуска расширения
+    function launchExtensionWindow() {
+      // В PWA нельзя использовать chrome.windows.create,
+      // но можно открыть новое окно/вкладку с особенностями расширения
+      var extWindow = window.open(
+        '/extension-simulator.html',
+        '_blank',
+        'width=800,height=600,titlebar=no,toolbar=no'
+      );
+      
+      if (extWindow) {
+        // Отправка сообщения в новое окно
+        extWindow.postMessage({ type: 'init-extension' }, '*');
+      }
+    }
+
+    // Обработчик сообщений от Service Worker
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'traffic-status') {
+        showTrafficStatus(event.data.status);
+      }
+      if (event.data && event.data.type === 'browsec-status') {
+        updateBrowsecStatusUI(event.data.status);
+      }
+    });
+
+    function showTrafficStatus(status) {
+      var statusDiv = document.createElement('div');
+      statusDiv.style.padding = '12px';
+      statusDiv.style.background = status === 'allowed' ? '#1f2326' : '#3e2525';
+      statusDiv.style.borderRadius = '6px';
+      statusDiv.style.marginTop = '20px';
+      statusDiv.textContent = 'Трафик: ' + status;
+      document.querySelector('.container').appendChild(statusDiv);
+    }
+
+    function updateBrowsecStatusUI(status) {
+      var browsecSpan = document.getElementById('browsec-status');
+      if (status === 'connected') {
+        browsecSpan.textContent = 'Активен';
+        browsecSpan.style.color = '#4c1';
+      } else if (status === 'disconnected') {
+        browsecSpan.textContent = 'Отключен';
+        browsecSpan.style.color = '#666';
+      } else {
+        browsecSpan.textContent = '—';
+        browsecSpan.style.color = '#8899a3';
+      }
+    }
+  </script>
+</body>
+</html>
