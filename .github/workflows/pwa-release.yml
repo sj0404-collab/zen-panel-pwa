@@ -21,9 +21,9 @@ jobs:
         run: |
           gh release create "v${GITHUB_REF_NAME}" \
             --title "V${GITHUB_REF_NAME} - PWA Release" \
-            --notes "## Что нового
+            --notes "## Zen Panel PWA v${GITHUB_REF_NAME}
 
-            ### PWA приложение
+            ### Приложение
             - Standalone режим (установка в Via, Chrome, мобильные браузеры)
             - Google Search с forward-traffic логированием
             - Browsec интеграция (симуляция статуса)
@@ -31,23 +31,34 @@ jobs:
             - Service Worker кэширование и офлайн-режим
             - Иконки для установки на домашний экран
 
-            ### Android APK
-            - WebView панель Zen Panel
-            - Подключение к хабу NPM Hub
-            - VNC / Linux / Терминалы
-            - Файлы, Git, GitHub API
+            ### Android APK (Zen Panel)
+            - WebView панель с интерфейсом на React/Vue стиле
+            - Подключение к self-hosted хабу NPM Hub
+            - VNC / Linux-экран / Терминалы
+            - Файловый менеджер, Git операции
+            - API GitHub (репозитории, workflows, сессии)
+            - Офлайн-режим через localStorage кэш
 
             ### Установка
-            1. **PWA**: Откройте в Via/Chrome, меню → "Установить сайт"
-            2. **APK**: Соберите релиз через `./gradlew assembleRelease` (требует keystore)
+            1. **PWA**: Откройте в браузере (Via, Chrome), меню → "Установить сайт"
+               Приложение запускается в standalone режиме без адресной строки
+            2. **APK**: Соберите релиз вручную:
+               ```bash
+               cd code
+               ./gradlew assembleRelease
+               ```
+               (требует keystore в `code/keystore/` и настройки в `gradle.properties`)
+
+            ### Структура репозитория
+            - `pwa/` — статические файлы PWA (manifest, service worker, HTML)
+            - `code/app/` — Android модуль с WebView панелью
+            - `.github/workflows/` — CI workflows
 
             ### Ссылки
             - GitHub: https://github.com/sj0404-collab/zen-panel-pwa
             - PWA файлы: `pwa/`
-            - Android: `code/app/`
+            - Android модуль: `code/app/`
 
-            ### Artifacts
-            - Debug APK: запустить сборку через workflow `android-apk`"
+            ---
 
-      - name: List repository contents
-        run: ls -la
+            *Релиз создан автоматически при push тега v*"
