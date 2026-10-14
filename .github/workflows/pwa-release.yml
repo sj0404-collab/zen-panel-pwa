@@ -2,8 +2,12 @@ name: PWA Release
 
 on:
   push:
-    tags: [v*]
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version without leading v (e.g. 1.0.1)'
+        required: true
 
 jobs:
   create-release:
@@ -15,40 +19,43 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create GitHub Release
+      - name: Determine version
+        id: ver
         run: |
-          gh release create "v${GITHUB_REF#refs/tags/v}" \
-            --title "V${GITHUB_REF#refs/tags/v} - PWA Release" \
-            --notes "## Zen Panel PWA
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
 
-            ### Приложение
-            - Standalone режим (установка в Via, Chrome, мобильные браузеры)
-            - Google Search с forward-traffic логированием
-            - Browsec интеграция (симуляция статуса)
-            - Extension симулятор окна
-            - Service Worker кэширование и офлайн-режим
-            - Иконки для установки на домашний экран
+      - name: Write release notes
+        run: |
+          cat > "$RUNNER_TEMP/release_notes.md" <<'EOF'
+          ## Zen Panel
 
-            ### Android APK (Zen Panel)
-            - WebView панель с интерфейсом
-            - Подключение к self-hosted хабу NPM Hub
-            - VNC / Linux-экран / Терминалы
-            - Файловый менеджер, Git операции
-            - API GitHub (репозитории, workflows, сессии)
-            - Офлайн-режим через localStorage кэш
+          ### Android app (native)
+          - Native Kotlin UI (Material 3, dark theme)
+          - Real VPN via WireGuard userspace backend (VpnService + route table)
+          - Server list with country selection
+          - Live traffic counters and speed, read from wireguard-go
+          - Foreground notification with country and current speed
+          - Google Search, network status and local traffic log
+          - Extension simulator screen
 
-            ### Установка
-            1. **PWA**: Откройте в браузере (Via, Chrome), меню → "Установить сайт"
-            2. **APK**: Соберите релиз вручную (требует keystore и gradle)
+          ### Install
+          1. Download the APK artifact from the latest workflow run.
+          2. Add your own WireGuard config in the app: Servers -> Add server.
+          3. Pick a server and tap Connect.
 
-            ### Структура
-            - `pwa/` — статические файлы PWA (manifest, service worker, HTML)
-            - `code/` — Android модуль и корневой проект
+          ### Layout
+          - `pwa/` - static PWA files (manifest, service worker, HTML)
+          - `code/` - native Android (Gradle) project
+          EOF
 
-            ### Ссылки
-            - GitHub: https://github.com/sj0404-collab/zen-panel-pwa
-            - PWA файлы: `pwa/`
-
-            ---
-
-            *Релиз создан автоматически при push тега v*"
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.ver.outputs.version }}" \
+            --title "v${{ steps.ver.outputs.version }} - Zen Panel" \
+            --notes-file "$RUNNER_TEMP/release_notes.md"

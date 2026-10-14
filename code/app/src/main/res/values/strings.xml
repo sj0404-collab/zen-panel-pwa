@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zen Panel</string>
+    <string name="panel_subtitle">VPN-панель с реальным трафиком, скоростью и странами</string>
+
+    <string name="vpn_title">VPN</string>
+    <string name="vpn_no_server">Сервер не выбран</string>
+    <string name="vpn_connected">Подключено</string>
+    <string name="vpn_disconnected">Отключено</string>
+    <string name="vpn_connecting">Подключение…</string>
+    <string name="vpn_disconnecting">Отключение…</string>
+    <string name="vpn_permission_denied">Разрешение на VPN не выдано</string>
+    <string name="vpn_stats">↓ %1$s   ↑ %2$s\nВсего: ↓ %3$s   ↑ %4$s</string>
+    <string name="vpn_stats_empty">↓ 0.0 B/s   ↑ 0.0 B/s</string>
+    <string name="vpn_notif_title">Zen Panel · %1$s</string>
+    <string name="vpn_notif_line">↓ %1$s   ↑ %2$s</string>
+    <string name="vpn_error">Ошибка VPN: %1$s</string>
+    <string name="vpn_channel_name">VPN-соединение</string>
+    <string name="vpn_channel_description">Статус VPN, страна и скорость</string>
+
+    <string name="connect">Подключить</string>
+    <string name="disconnect">Отключить</string>
+    <string name="delete">Удалить</string>
+
+    <string name="servers_title">Серверы</string>
+    <string name="servers_subtitle">Добавьте свои WireGuard-конфиги и выберите страну</string>
+    <string name="servers_empty">Список пуст. Добавьте сервер ниже.</string>
+    <string name="server_add_title">Добавить сервер</string>
+    <string name="server_add_save">Сохранить</string>
+    <string name="server_selected">Выбран сервер: %1$s</string>
+    <string name="server_config_required">Вставьте WireGuard-конфиг</string>
+    <string name="server_default_name">Мой сервер</string>
+    <string name="server_country">Страна (например, Нидерланды)</string>
+    <string name="server_country_code">Код страны (например, NL)</string>
+    <string name="server_name">Название сервера</string>
+    <string name="server_config">WireGuard-конфиг</string>
+
+    <string name="search_hint">Поиск в Google...</string>
+    <string name="search_button">Поиск</string>
+
+    <string name="status_title">Сеть</string>
+    <string name="status_online">Онлайн</string>
+    <string name="status_offline">Офлайн</string>
+
+    <string name="test_notification">Тест уведомления</string>
+    <string name="launch_extension">Запустить расширение</string>
+
+    <string name="traffic_title">Журнал трафика</string>
+    <string name="traffic_empty">Пока пусто</string>
+    <string name="clear_log">Очистить</string>
+
+    <string name="extension_title">Extension Simulator</string>
+    <string name="extension_search_hint">Поиск через расширение...</string>
+    <string name="extension_hint">Введите запрос для поиска</string>
+    <string name="close">Закрыть</string>
+
+    <string name="channel_name">Zen Panel</string>
+    <string name="channel_description">Уведомления Zen Panel</string>
+    <string name="notify_enabled_body">Приложение работает без Chrome браузера!</string>
+    <string name="notify_permission_denied">Разрешение на уведомления не выдано</string>
+</resources>
