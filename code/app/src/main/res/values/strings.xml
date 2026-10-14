@@ -58,4 +58,8 @@
     <string name="channel_description">Уведомления Zen Panel</string>
     <string name="notify_enabled_body">Приложение работает без Chrome браузера!</string>
     <string name="notify_permission_denied">Разрешение на уведомления не выдано</string>
+    <string name="apps_pick_title">Выбрать приложения для VPN</string>
+    <string name="apps_pick_none">Ничего выбрано: через туннель будут идти все</string>
+    <string name="apps_pick_button">Выбрать приложения</string>
+    <string name="apps_pick_done">Выбрано: %1$d, конфиг обновлён</string>
 </resources>
