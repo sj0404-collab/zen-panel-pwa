@@ -1,0 +1,56 @@
+name: PWA Release
+
+on:
+  push:
+    tags: [v*]
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Debug APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: zen-panel-debug-apk
+          path: ./artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/-release-action@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "V${github.ref_name#v} - PWA Release"
+          body: |
+            ## Что нового
+
+            ### PWA приложение
+            - Standalone режим (установка в Via, Chrome, мобильные браузеры)
+            - Google Search с forward-traffic логированием
+            - Browsec интеграция (симуляция статуса)
+            - Extension симулятор окна
+            - Service Worker кэширование и офлайн-режим
+            - Иконки для установки на домашний экран
+
+            ### Android APK
+            - WebView панель Zen Panel
+            - Подключение к хабу NPM Hub
+            - VNC / Linux / Терминалы
+            - Файлы, Git, GitHub API
+
+            ### Установка
+            1. **PWA**: Откройте в Via/Chrome, меню → "Установить сайт"
+            2. **APK**: Соберите релиз через `./gradlew assembleRelease` (требует keystore)
+
+            ### Ссылки
+            - GitHub: https://github.com/sj0404-collab/zen-panel-pwa
+            - PWA файлы: `pwa/`
+            - Android: `code/app/`
+
+      - name: List artifacts
+        run: ls -la artifacts/
