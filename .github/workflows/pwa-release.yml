@@ -16,12 +16,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create GitHub Release
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
-          gh release create "v${GITHUB_REF_NAME}" \
-            --title "V${GITHUB_REF_NAME} - PWA Release" \
-            --notes "## Zen Panel PWA v${GITHUB_REF_NAME}
+          gh release create "v${GITHUB_REF#refs/tags/v}" \
+            --title "V${GITHUB_REF#refs/tags/v} - PWA Release" \
+            --notes "## Zen Panel PWA
 
             ### Приложение
             - Standalone режим (установка в Via, Chrome, мобильные браузеры)
