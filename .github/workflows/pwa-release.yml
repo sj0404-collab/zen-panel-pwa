@@ -1,4 +1,4 @@
-name: PWA Release
+name: Zen Panel Release
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
         required: true
 
 jobs:
-  create-release:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -18,6 +18,46 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('code/gradle/wrapper/gradle-wrapper.properties', 'code/**/*.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x code/gradlew
+
+      - name: Decode release keystore (if configured)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No KEYSTORE_BASE64 secret set; release build will be unsigned."
+            exit 0
+          fi
+          mkdir -p code/keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > code/keystore/release.jks
+          {
+            echo "storeFile=keystore/release.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > code/keystore.properties
+          echo "Release keystore configured."
 
       - name: Determine version
         id: ver
@@ -28,34 +68,54 @@ jobs:
             echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Build release APK
+        working-directory: code
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Assemble release assets
+        run: |
+          set -e
+          RELEASE_DIR="$(pwd)/release-assets"
+          mkdir -p "$RELEASE_DIR"
+          cp code/app/build/outputs/apk/release/*.apk "$RELEASE_DIR"/
+          (cd pwa && zip -r "$RELEASE_DIR/zen-panel-pwa.zip" . >/dev/null)
+          ls -la "$RELEASE_DIR"
+
       - name: Write release notes
         run: |
           cat > "$RUNNER_TEMP/release_notes.md" <<'EOF'
           ## Zen Panel
 
-          ### Android app (native)
+          ### Artifacts
+          - `app-release.apk` - signed native Android app (WireGuard VPN)
+          - `zen-panel-pwa.zip` - static PWA files
+
+          ### Features
           - Native Kotlin UI (Material 3, dark theme)
           - Real VPN via WireGuard userspace backend (VpnService + route table)
-          - Server list with country selection
-          - Live traffic counters and speed, read from wireguard-go
+          - Server list with country selection and user-supplied WireGuard configs
+          - Live traffic counters and speed read from wireguard-go
           - Foreground notification with country and current speed
-          - Google Search, network status and local traffic log
-          - Extension simulator screen
+          - Google Search, network status, local traffic log, extension simulator
 
           ### Install
-          1. Download the APK artifact from the latest workflow run.
-          2. Add your own WireGuard config in the app: Servers -> Add server.
+          1. Download `app-release.apk` below and install it.
+          2. Add your own WireGuard config: Servers -> Add server.
           3. Pick a server and tap Connect.
-
-          ### Layout
-          - `pwa/` - static PWA files (manifest, service worker, HTML)
-          - `code/` - native Android (Gradle) project
           EOF
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          gh release create "v${{ steps.ver.outputs.version }}" \
-            --title "v${{ steps.ver.outputs.version }} - Zen Panel" \
-            --notes-file "$RUNNER_TEMP/release_notes.md"
+          set -e
+          TAG="v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release-assets/* --clobber
+          else
+            gh release create "$TAG" \
+              --title "$TAG - Zen Panel" \
+              --notes-file "$RUNNER_TEMP/release_notes.md" \
+              release-assets/*
+          fi
