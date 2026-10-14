@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var store: PanelStore
+    private val networkMonitor = NetworkMonitor()
     private lateinit var app: App
 
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
@@ -78,6 +79,7 @@ class MainActivity : AppCompatActivity() {
         binding.buttonClearLog.setOnClickListener {
             store.clearTraffic()
             renderTraffic()
+        refreshNetworkDiagnostics()
         }
 
         updateStatus(isOnline())
@@ -246,6 +248,17 @@ class MainActivity : AppCompatActivity() {
         }
         return String.format(Locale.US, "%.1f %s", value, units[unit])
     }
+
+    private fun refreshNetworkDiagnostics() {
+        networkMonitor.measureOnce { ping, jitter, ip ->
+            runOnUiThread {
+                val extra = if (ip == null) "" else "  IP:$ip"
+                binding.textVpnStats.text = binding.textVpnStats.text.toString() + "\n" +
+                    "ping:${if (ping < 0) "—" else ping}ms jit:${jitter}ms$extra"
+            }
+        }
+    }
+
 
     private fun toast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
