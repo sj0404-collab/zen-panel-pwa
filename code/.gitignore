@@ -5,3 +5,7 @@ local.properties
 .idea/
 .cxx/
 captures/
+keystore.properties
+keystore/
+*.jks
+*.keystore
