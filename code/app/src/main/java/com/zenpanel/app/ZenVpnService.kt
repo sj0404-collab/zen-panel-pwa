@@ -79,6 +79,7 @@ class ZenVpnService : Service() {
             try {
                 val result = manager.up(config)
                 connected = result == Tunnel.State.UP
+                persistRunning(connected)
                 handler.post {
                     lastRx = 0
                     lastTx = 0
@@ -89,6 +90,7 @@ class ZenVpnService : Service() {
                 }
             } catch (e: Exception) {
                 connected = false
+                persistRunning(false)
                 handler.post {
                     updateNotification(getString(R.string.vpn_error, e.message ?: ""))
                     handler.postDelayed({ stopSelf() }, 4000)
@@ -99,6 +101,7 @@ class ZenVpnService : Service() {
 
     private fun handleDisconnect() {
         connected = false
+        persistRunning(false)
         handler.removeCallbacks(ticker)
         worker.execute { manager.down() }
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -193,6 +196,13 @@ class ZenVpnService : Service() {
         )
     }
 
+    private fun persistRunning(running: Boolean) {
+        getSharedPreferences(PREFS_STATE, MODE_PRIVATE).edit()
+            .putBoolean(KEY_RUNNING, running)
+            .putBoolean(KEY_WAS_CONNECTED, running)
+            .apply()
+    }
+
     private fun formatSpeed(bytesPerSecond: Double): String {
         val units = arrayOf("B/s", "KB/s", "MB/s", "GB/s")
         var value = bytesPerSecond
@@ -205,10 +215,13 @@ class ZenVpnService : Service() {
     }
 
     companion object {
+        private const val PREFS_STATE = "zen_vpn_state"
+        private const val KEY_RUNNING = "running"
+        private const val KEY_WAS_CONNECTED = "was_connected"
         const val ACTION_CONNECT = "com.zenpanel.app.action.CONNECT"
         const val ACTION_DISCONNECT = "com.zenpanel.app.action.DISCONNECT"
-        private const val EXTRA_CONFIG = "extra_config"
-        private const val EXTRA_LABEL = "extra_label"
+        const val EXTRA_CONFIG = "extra_config"
+        const val EXTRA_LABEL = "extra_label"
         private const val CHANNEL_ID = "zen_vpn"
         private const val NOTIFICATION_ID = 4321
 
